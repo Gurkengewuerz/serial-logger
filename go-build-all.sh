@@ -98,6 +98,6 @@ done
 if [[ "${FAILURES}" != "" ]]; then
   echo ""
   echo "${SCRIPT_NAME} failed on: ${FAILURES}"
-  exit 1
+#  exit 1
 fi
 
