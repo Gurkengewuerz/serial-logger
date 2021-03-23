@@ -1,3 +1,5 @@
 build/
 .actrc
 .idea/
+packrd/
+*packr.go

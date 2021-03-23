@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <title>Serial Logger</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel='stylesheet' type='text/css' href='/grid.css'/>
+    <link rel='stylesheet' type='text/css' href='/main.css'/>
+</head>
+<body>
+<div class='container'>
+    <div class='row'>
+        <h1 style='margin-top: 0px; margin-bottom: 0px;'>Serial Logger</h1>
+    </div>
+    <hr/>
+    <div class='row' style='margin-bottom: 35px'>
+        <div class='col-2'>
+            <!--            TODO: Add Selection Box for Log 0 or Log 1 -->
+            <select id="ports">
+                <option value=""></option>
+                <option value="0">Port 1</option>
+                <option value="1">Port 2</option>
+                <option value="1">Port 3</option>
+            </select>
+        </div>
+        <div class='col-4'>
+            <a class='button purple' href='#' onclick="download()">Download</a>
+        </div>
+        <div class='col-4'>
+            <a class='button blue' href='#' onclick="upload()">Hochladen</a>
+        </div>
+        <div class='col-2'>
+            <a class='button red' href='#' onclick="deleteFiles()">Löschen</a>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            <textarea disabled id="logData"></textarea>
+        </div>
+    </div>
+    <hr/>
+    <div class='row'>
+        <div class='col-12'>
+            <a target='_blank' href='https://differentmind.de/'>Different Mind GmbH</a>
+            coded with &#x1F497; by <a target='_blank' href='https://mc8051.de'>Niklas Schütrumpf</a>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    function getFile() {
+        // TODO: Use Promise
+        /*
+        var http = new XMLHttpRequest();
+        var url = 'get_data.php';
+        var params = 'orem=ipsum&name=binny';
+        http.open('POST', url, true);
+
+        //Send the proper header information along with the request
+        http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+        http.onreadystatechange = function() {//Call a function when the state changes.
+            if(http.readyState == 4 && http.status == 200) {
+                alert(http.responseText);
+            }
+        }
+        http.send(params);
+         */
+    }
+
+    async function upload() {
+        // TODO: Implement Upload button
+    }
+
+    async function download() {
+        let data = await getFile();
+        let blob = new Blob([data], {
+            type: "text/plain;charset=utf-8;"
+        });
+
+        navigator.msSaveBlob(blob, "differentmind-edc.log")
+    }
+
+    async function deleteFiles() {
+
+    }
+
+    document.addEventListener("DOMContentLoaded", function (event) {
+        // TODO: connect to Websocket
+    });
+</script>
+</body>
+</html>

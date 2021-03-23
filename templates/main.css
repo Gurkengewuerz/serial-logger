@@ -1,0 +1,124 @@
+html {
+    box-sizing: border-box;
+}
+
+* {
+    color: #C5C1C0;
+    background-color: #0A1612;
+    font: 1.03em 'Tahoma', Geneva, Arial, sans-serif;
+}
+
+.button {
+    width: 100%;
+    display: block;
+    float: left;
+    border-radius: 3px;
+    margin: 0px 0px 10px 0px;
+    padding: 10px 0px;
+    text-align: center;
+    text-decoration: none;
+    font: 18px 'Arial', Helvetica, Arial, sans-serif;
+    color: #ecf0f1;
+}
+
+.button:active {
+    position: relative;
+    top: 1px;
+}
+
+.gray {
+    box-shadow: 0px 6px #7f8c8d;
+    background: #95a5a6;
+}
+
+.gray:active {
+    box-shadow: 0px 0px #7f8c8d;
+    background: #7f8c8d;
+}
+
+.red {
+    box-shadow: 0px 6px #c0392b;
+    background: #e74c3c;
+}
+
+.red:active {
+    box-shadow: 0px 0px #c0392b;
+    background: #c0392b;
+}
+
+.purple {
+    box-shadow: 0px 6px #8e44ad;
+    background: #9b59b6;
+}
+
+.purple:active {
+    box-shadow: 0px 0px #8e44ad;
+    background: #8e44ad;
+}
+
+.blue {
+    background: #3498db;
+    box-shadow: 0px 6px #2980b9;
+}
+
+.blue:active {
+    background: #2980b9;
+    box-shadow: 0px 0px #2980b9;
+}
+
+.green {
+    box-shadow: 0px 6px #27ae60;
+    background: #2ecc71;
+}
+
+.green:active {
+    box-shadow: 0px 0px #23A33D;
+    background: #23A33D;
+}
+
+.yellow {
+    box-shadow: 0px 6px #f39c12;
+    background: #f1c40f;
+}
+
+.yellow:active {
+    box-shadow: 0px 0px #f39c12;
+    background: #f39c12;
+}
+
+.orange {
+    box-shadow: 0px 6px #d35400;
+    background: #e67e22;
+}
+
+.orange:active {
+    box-shadow: 0px 0px #d35400;
+    background: #d35400;
+}
+
+.dark_blue {
+    box-shadow: 0px 6px #2c3e50;
+    background: #34495e;
+}
+
+.dark_blue:active {
+    box-shadow: 0px 0px #2c3e50;
+    background: #2c3e50;
+}
+
+select {
+    width: 100%;
+    padding: 10px 20px;
+    box-sizing: border-box;
+    background-color: whitesmoke;
+    color: black;
+    border-radius: 4px;
+}
+
+textarea {
+    border: 1px solid #999999;
+    width: 100%;
+    padding: 3px;
+    height: 50vh;
+    resize: none;
+}
