@@ -16,7 +16,7 @@
     <div class='row' style='margin-bottom: 35px'>
         <div class='col-2'>
             <!--            TODO: Add Selection Box for Log 0 or Log 1 -->
-            <select id="ports">
+            <select onchange="onPortChange()" id="ports">
                 <option value=""></option>
                 <option value="0">Port 1</option>
                 <option value="1">Port 2</option>
@@ -24,18 +24,18 @@
             </select>
         </div>
         <div class='col-4'>
-            <a class='button purple' href='#' onclick="download()">Download</a>
+            <a class='button purple' href='#' onclick="downloadFile()">Download</a>
         </div>
         <div class='col-4'>
             <a class='button blue' href='#' onclick="upload()">Hochladen</a>
         </div>
         <div class='col-2'>
-            <a class='button red' href='#' onclick="deleteFiles()">Löschen</a>
+            <a class='button red' href='#' onclick="deleteFile()">Löschen</a>
         </div>
     </div>
     <div class='row'>
         <div class='col-12'>
-            <textarea disabled id="logData"></textarea>
+            <div id="logData"></div>
         </div>
     </div>
     <hr/>
@@ -47,45 +47,131 @@
     </div>
 </div>
 <script type="text/javascript">
-    function getFile() {
-        // TODO: Use Promise
-        /*
-        var http = new XMLHttpRequest();
-        var url = 'get_data.php';
-        var params = 'orem=ipsum&name=binny';
-        http.open('POST', url, true);
+    const messageLog = document.getElementById("logData")
+    const portSelect = document.getElementById("ports")
 
-        //Send the proper header information along with the request
-        http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-
-        http.onreadystatechange = function() {//Call a function when the state changes.
-            if(http.readyState == 4 && http.status == 200) {
-                alert(http.responseText);
-            }
-        }
-        http.send(params);
-         */
-    }
+    var selectedPort = undefined;
 
     async function upload() {
-        // TODO: Implement Upload button
+        alert("Dieses Feature ist noch nicht implementiert!");
     }
 
-    async function download() {
-        let data = await getFile();
-        let blob = new Blob([data], {
-            type: "text/plain;charset=utf-8;"
-        });
-
-        navigator.msSaveBlob(blob, "differentmind-edc.log")
+    function saveInBrowser(filename, content) {
+        let blob = new Blob([content]);
+        let needsClick = true;
+        if (window.webkitURL) {
+            // Chrome
+            let link = document.createElement("a");
+            link.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURI(content));
+            link.setAttribute("target", "_blank");
+            link.setAttribute("download", filename);
+            link.click();
+        } else {
+            if (document.createEvent) {
+                // Firefox
+                let link = document.createElement("a");
+                link.setAttribute("href", encodeURI("data:text/plain;charset=utf-8," + content));
+                link.setAttribute("download", filename);
+                let e = document.createEvent('MouseEvents');
+                e.initEvent('click', true, true);
+                needsClick = link.dispatchEvent(e);
+            }
+            if (needsClick) {
+                if (window.navigator.msSaveBlob != undefined) {
+                    // Internet Explorer
+                    window.navigator.msSaveBlob(blob, filename);
+                }
+            }
+        }
     }
 
-    async function deleteFiles() {
+    async function downloadFile() {
+        if (selectedPort === undefined) {
+            alert("Bitte wählen Sie einen Port aus.");
+            return;
+        }
+        let http = new XMLHttpRequest();
+        let url = `/data/${selectedPort}`;
+        http.open("GET", url, true);
 
+        http.onreadystatechange = function () {
+            if (http.readyState === 4) {
+                if (http.status === 200) saveInBrowser("differentmind-edc.log", http.responseText);
+                else alert(http.statusText);
+            }
+        }
+        http.send();
+    }
+
+    async function deleteFile() {
+        if (selectedPort === undefined) {
+            alert("Bitte wählen Sie einen Port aus.");
+            return;
+        }
+
+        let http = new XMLHttpRequest();
+        let url = `/delete/${selectedPort}`;
+        http.open("GET", url, true);
+
+        http.onreadystatechange = function () {
+            if (http.readyState === 4) {
+                alert("Gelöscht");
+            }
+        }
+        http.send();
+    }
+
+    async function onPortChange() {
+        let value = portSelect.value;
+        if (value === "" || value === undefined) selectedPort = undefined;
+        else selectedPort = parseInt(value);
+    }
+
+    function appendLog(text, error) {
+        const p = document.createElement("p");
+        p.innerText = `${text}`;
+        if (error === true) {
+            p.style.color = "red";
+            p.style.fontStyle = "bold";
+        } else if (error === false) {
+            p.style.color = "green";
+            p.style.fontStyle = "bold";
+        }
+        messageLog.append(p);
+        return p;
+    }
+
+    function dial() {
+        const conn = new WebSocket(`ws://${location.host}/subscribe`);
+
+        conn.addEventListener("close", ev => {
+            appendLog(`WebSocket Disconnected code: ${ev.code}, reason: ${ev.reason}`, true);
+            if (ev.code !== 1001) {
+                appendLog("Reconnecting in 1s", true);
+                setTimeout(dial, 1000);
+            }
+        })
+        conn.addEventListener("open", ev => {
+            console.info("websocket connected");
+            appendLog("WebSocket connected", false);
+        })
+
+        // This is where we handle messages received.
+        conn.addEventListener("message", ev => {
+            if (typeof ev.data !== "string") {
+                console.error("unexpected message type", typeof ev.data);
+                return;
+            }
+            if (selectedPort !== undefined && ev.data.startsWith(`{${selectedPort}}`)) {
+                return;
+            }
+            const p = appendLog(ev.data.substring(3))
+            p.scrollIntoView();
+        })
     }
 
     document.addEventListener("DOMContentLoaded", function (event) {
-        // TODO: connect to Websocket
+        dial();
     });
 </script>
 </body>

@@ -3,8 +3,12 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -31,6 +35,8 @@ func newChatServer(c chan string) *chatServer {
 	}
 	cs.serveMux.Handle("/", http.FileServer(cs.packrBox))
 	cs.serveMux.HandleFunc("/subscribe", cs.subscribeHandler)
+	cs.serveMux.HandleFunc("/data/", cs.getFile)
+	cs.serveMux.HandleFunc("/delete/", cs.deleteFile)
 
 	go func() {
 		data := <-c
@@ -49,6 +55,31 @@ type subscriber struct {
 
 func (cs *chatServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	cs.serveMux.ServeHTTP(w, r)
+}
+
+func (cs *chatServer) getFile(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/data/")
+	if _, err := strconv.Atoi(id); err != nil {
+		w.WriteHeader(400)
+		return
+	}
+
+	http.ServeFile(w, r, fmt.Sprintf("differentmind_%v.log", id))
+}
+
+func (cs *chatServer) deleteFile(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/delete/")
+	if _, err := strconv.Atoi(id); err != nil {
+		w.WriteHeader(400)
+		return
+	}
+
+	err := os.Remove(fmt.Sprintf("differentmind_%v.log", id))
+	if err != nil {
+		w.WriteHeader(500)
+	} else {
+		w.WriteHeader(200)
+	}
 }
 
 // subscribeHandler accepts the WebSocket connection and then subscribes
