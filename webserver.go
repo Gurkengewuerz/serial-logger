@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,13 +24,16 @@ type chatServer struct {
 	subscribers   map[*subscriber]struct{}
 
 	packrBox *packr.Box
+
+	delChan *chan int
 }
 
 // newChatServer constructs a chatServer with the defaults.
-func newChatServer(c chan string) *chatServer {
+func newChatServer(c *chan string, delChan *chan int) *chatServer {
 	cs := &chatServer{
 		subscribers: make(map[*subscriber]struct{}),
 		packrBox:    packr.New("httpFolder", "./templates"),
+		delChan:     delChan,
 	}
 	cs.serveMux.Handle("/", http.FileServer(cs.packrBox))
 	cs.serveMux.HandleFunc("/subscribe", cs.subscribeHandler)
@@ -39,8 +41,10 @@ func newChatServer(c chan string) *chatServer {
 	cs.serveMux.HandleFunc("/delete/", cs.deleteFile)
 
 	go func() {
-		data := <-c
-		cs.publish([]byte(data))
+		for {
+			data := <-*c
+			cs.publish([]byte(data))
+		}
 	}()
 	return cs
 }
@@ -64,22 +68,24 @@ func (cs *chatServer) getFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.ServeFile(w, r, fmt.Sprintf("differentmind_%v.log", id))
+	http.ServeFile(w, r, fmt.Sprintf("differentmind_%v.txt", id))
 }
 
 func (cs *chatServer) deleteFile(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/delete/")
-	if _, err := strconv.Atoi(id); err != nil {
+	iID, err := strconv.Atoi(id)
+	if err != nil {
 		w.WriteHeader(400)
 		return
 	}
-
-	err := os.Remove(fmt.Sprintf("differentmind_%v.log", id))
-	if err != nil {
-		w.WriteHeader(500)
-	} else {
-		w.WriteHeader(200)
+	select {
+	case *cs.delChan <- iID:
+		fmt.Println("sent message")
+	default:
+		fmt.Println("no message sent")
 	}
+
+	w.WriteHeader(200)
 }
 
 // subscribeHandler accepts the WebSocket connection and then subscribes

@@ -20,7 +20,7 @@
                 <option value=""></option>
                 <option value="0">Port 1</option>
                 <option value="1">Port 2</option>
-                <option value="1">Port 3</option>
+                <option value="2">Port 3</option>
             </select>
         </div>
         <div class='col-4'>
@@ -162,7 +162,7 @@
                 console.error("unexpected message type", typeof ev.data);
                 return;
             }
-            if (selectedPort !== undefined && ev.data.startsWith(`{${selectedPort}}`)) {
+            if (selectedPort !== undefined && !ev.data.startsWith(`{${selectedPort}}`)) {
                 return;
             }
             const p = appendLog(ev.data.substring(3))
