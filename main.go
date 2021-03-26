@@ -187,7 +187,7 @@ func main() {
 			continue
 		}
 
-		whileRun(i, s, &mode)
+		go whileRun(i, s, &mode)
 	}
 
 	for {
