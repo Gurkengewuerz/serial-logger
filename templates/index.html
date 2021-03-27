@@ -76,7 +76,10 @@
 
         http.onreadystatechange = function () {
             if (http.readyState === 4) {
-                if (http.status === 200) saveInBrowser("differentmind-edc.txt", http.responseText);
+                const now = new Date();
+                const dateString = now.getUTCFullYear() + "-" + ("0" + (now.getUTCMonth() + 1)).slice(-2) + "-" + ("0" + now.getUTCDate()).slice(-2)
+                    + "_" + ("0" + now.getUTCHours()).slice(-2) + ("0" + now.getUTCMinutes()).slice(-2) + ("0" + now.getUTCSeconds()).slice(-2);
+                if (http.status === 200) saveInBrowser(`differentmind_${dateString}.txt`, http.responseText);
                 else alert(http.statusText);
             }
         }
