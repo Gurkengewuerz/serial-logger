@@ -29,7 +29,7 @@ type chatServer struct {
 }
 
 // newChatServer constructs a chatServer with the defaults.
-func newChatServer(c *chan string, delChan *chan int) *chatServer {
+func newChatServer(c *chan []byte, delChan *chan int) *chatServer {
 	cs := &chatServer{
 		subscribers: make(map[*subscriber]struct{}),
 		packrBox:    packr.New("httpFolder", "./templates"),
@@ -43,7 +43,7 @@ func newChatServer(c *chan string, delChan *chan int) *chatServer {
 	go func() {
 		for {
 			data := <-*c
-			cs.publish([]byte(data))
+			cs.publish(data)
 		}
 	}()
 	return cs

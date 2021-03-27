@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/akamensky/argparse"
 	"go.bug.st/serial"
+	"golang.org/x/net/html/charset"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -19,7 +21,7 @@ import (
 var (
 	TimeDiff   = float64(0)
 	isPi       = false
-	dataChan   = make(chan string)
+	dataChan   = make(chan []byte)
 	deleteChan = make(chan int)
 )
 
@@ -83,19 +85,28 @@ func runForPort(i int, portName string, mode *serial.Mode) bool {
 				cleanText := strings.Replace(s, "\r", "", -1)
 				cleanText = strings.Replace(cleanText, "\n", "", -1)
 
+				if len(cleanText) <= 0 || cleanText == "" {
+					continue
+				}
+
 				if cleanText[0] == 0x00 {
 					cleanText = cleanText[1:]
 				}
 
 				withDate := fmt.Sprintf("[%v] %v", getNow(), cleanText)
-				_, _ = f.WriteString(withDate)
+				reader, _ := charset.NewReaderLabel("ascii", bytes.NewReader([]byte(withDate)))
+				strBytes, _ := ioutil.ReadAll(reader)
+
+				_, _ = f.Write(strBytes)
 				_, _ = f.WriteString("\n")
-				f.Sync()
+				_ = f.Sync()
 
 				wsMsg := fmt.Sprintf("{%v}%v", i, withDate)
+				wsReader, _ := charset.NewReaderLabel("ascii", bytes.NewReader([]byte(wsMsg)))
+				wsStrBytes, _ := ioutil.ReadAll(wsReader)
 
 				select {
-				case dataChan <- wsMsg:
+				case dataChan <- wsStrBytes:
 					//fmt.Println("sent message")
 				default:
 					//fmt.Println("no message sent")
