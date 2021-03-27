@@ -4,4 +4,4 @@ build/
 packrd/
 *packr.go
 act/
-differentmind*.log
+differentmind*

@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset='utf-8'>
-    <title>Serial Logger</title>
+    <title>Diagnose-Adapter: Different Mind GmbH</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <link rel='stylesheet' type='text/css' href='/grid.css'/>
     <link rel='stylesheet' type='text/css' href='/main.css'/>
@@ -10,12 +10,11 @@
 <body>
 <div class='container'>
     <div class='row'>
-        <h1 style='margin-top: 0px; margin-bottom: 0px;'>Serial Logger</h1>
+        <h1 style='margin-top: 0px; margin-bottom: 0px;'>Diagnose-Adapter</h1>
     </div>
     <hr/>
     <div class='row' style='margin-bottom: 35px'>
         <div class='col-2'>
-            <!--            TODO: Add Selection Box for Log 0 or Log 1 -->
             <select onchange="onPortChange()" id="ports">
                 <option value=""></option>
                 <option value="0">Port 1</option>
@@ -23,11 +22,8 @@
                 <option value="2">Port 3</option>
             </select>
         </div>
-        <div class='col-4'>
+        <div class='col-8'>
             <a class='button purple' href='#' onclick="downloadFile()">Download</a>
-        </div>
-        <div class='col-4'>
-            <a class='button blue' href='#' onclick="upload()">Hochladen</a>
         </div>
         <div class='col-2'>
             <a class='button red' href='#' onclick="deleteFile()">Löschen</a>
@@ -47,42 +43,26 @@
     </div>
 </div>
 <script type="text/javascript">
-    const messageLog = document.getElementById("logData")
-    const portSelect = document.getElementById("ports")
+    const messageLog = document.getElementById("logData");
+    const portSelect = document.getElementById("ports");
+
+    const colors = ["darkturquoise", "orchid", "sandybrown"];
 
     var selectedPort = undefined;
 
-    async function upload() {
-        alert("Dieses Feature ist noch nicht implementiert!");
-    }
-
     function saveInBrowser(filename, content) {
+        content = content.replaceAll("\0", "");
         let blob = new Blob([content]);
-        let needsClick = true;
-        if (window.webkitURL) {
-            // Chrome
-            let link = document.createElement("a");
-            link.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURI(content));
-            link.setAttribute("target", "_blank");
-            link.setAttribute("download", filename);
-            link.click();
-        } else {
-            if (document.createEvent) {
-                // Firefox
-                let link = document.createElement("a");
-                link.setAttribute("href", encodeURI("data:text/plain;charset=utf-8," + content));
-                link.setAttribute("download", filename);
-                let e = document.createEvent('MouseEvents');
-                e.initEvent('click', true, true);
-                needsClick = link.dispatchEvent(e);
-            }
-            if (needsClick) {
-                if (window.navigator.msSaveBlob != undefined) {
-                    // Internet Explorer
-                    window.navigator.msSaveBlob(blob, filename);
-                }
-            }
-        }
+        console.log(blob)
+
+        let url = window.URL.createObjectURL(blob);
+        let link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("target", "_blank");
+        link.setAttribute("download", filename);
+        link.click();
+        window.URL.revokeObjectURL(url);
+        link.remove();
     }
 
     async function downloadFile() {
@@ -96,7 +76,7 @@
 
         http.onreadystatechange = function () {
             if (http.readyState === 4) {
-                if (http.status === 200) saveInBrowser("differentmind-edc.log", http.responseText);
+                if (http.status === 200) saveInBrowser("differentmind-edc.txt", http.responseText);
                 else alert(http.statusText);
             }
         }
@@ -127,7 +107,7 @@
         else selectedPort = parseInt(value);
     }
 
-    function appendLog(text, error) {
+    function appendLog(text, error, color) {
         const p = document.createElement("p");
         p.innerText = `${text}`;
         if (error === true) {
@@ -136,6 +116,8 @@
         } else if (error === false) {
             p.style.color = "green";
             p.style.fontStyle = "bold";
+        } else if (error === undefined && color !== undefined) {
+            p.style.color = colors[color];
         }
         messageLog.append(p);
         return p;
@@ -165,13 +147,18 @@
             if (selectedPort !== undefined && !ev.data.startsWith(`{${selectedPort}}`)) {
                 return;
             }
-            const p = appendLog(ev.data.substring(3))
+            const port = parseInt(ev.data.charAt(1));
+
+            const p = appendLog(ev.data.substring(3), undefined, port < 3 ? port : undefined);
             p.scrollIntoView();
         })
     }
 
     document.addEventListener("DOMContentLoaded", function (event) {
         dial();
+        for (let i = 0; i < portSelect.length; i++) {
+            portSelect.options[i].style.color = colors[parseInt(portSelect.options[i].value)];
+        }
     });
 </script>
 </body>

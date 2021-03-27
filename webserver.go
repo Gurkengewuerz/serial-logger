@@ -80,7 +80,7 @@ func (cs *chatServer) deleteFile(w http.ResponseWriter, r *http.Request) {
 	}
 	select {
 	case *cs.delChan <- iID:
-		fmt.Println("sent message")
+		fmt.Println("sent to channel to delete file")
 	default:
 		fmt.Println("no message sent")
 	}

@@ -32,7 +32,7 @@ func runForPort(i int, portName string, mode *serial.Mode) bool {
 
 	port, err := serial.Open(portName, mode)
 	if err != nil {
-		log.Printf("Failed to open port %v: %v", portName, err)
+		//log.Printf("Failed to open port %v: %v", portName, err)
 		return false
 	}
 
@@ -68,48 +68,56 @@ func runForPort(i int, portName string, mode *serial.Mode) bool {
 		}
 	}()
 
+	// Must be in another routine because there is no non blocking read
+	go func() {
+		for {
+			n, err := port.Read(buf)
+			if err != nil || n == 0 || delFile {
+				readError = true
+				return
+			}
+			stringBuffer.WriteString(string(buf[:n]))
+
+			if strings.Contains(stringBuffer.String(), "\n") {
+				s, err := stringBuffer.ReadString('\n')
+				cleanText := strings.Replace(s, "\r", "", -1)
+				cleanText = strings.Replace(cleanText, "\n", "", -1)
+
+				if cleanText[0] == 0x00 {
+					cleanText = cleanText[1:]
+				}
+
+				withDate := fmt.Sprintf("[%v] %v", getNow(), cleanText)
+				_, _ = f.WriteString(withDate)
+				_, _ = f.WriteString("\n")
+				f.Sync()
+
+				wsMsg := fmt.Sprintf("{%v}%v", i, withDate)
+
+				select {
+				case dataChan <- wsMsg:
+					//fmt.Println("sent message")
+				default:
+					//fmt.Println("no message sent")
+				}
+
+				t, err := time.Parse("2006-01-02 15:04:05", strings.Replace(cleanText, "# ", "", -1))
+				if err == nil {
+					log.Println("---------------- syncing time ----------------")
+					TimeDiff = time.Now().Sub(t).Seconds()
+				}
+			}
+		}
+	}()
+
 	for {
 		if delFile {
 			f.Close()
 			_ = os.Remove(fmt.Sprintf("differentmind_%v.txt", i))
 			return true
 		}
-
-		n, err := port.Read(buf)
-		if err != nil || n == 0 {
-			readError = true
+		if readError {
 			break
-		}
-		stringBuffer.WriteString(string(buf[:n]))
-
-		if strings.Contains(stringBuffer.String(), "\n") {
-			s, err := stringBuffer.ReadString('\n')
-			cleanText := strings.Replace(s, "\r", "", -1)
-			cleanText = strings.Replace(cleanText, "\n", "", -1)
-
-			if cleanText[0] == 0x00 {
-				cleanText = cleanText[1:]
-			}
-
-			withDate := fmt.Sprintf("[%v] %v", getNow(), cleanText)
-			_, _ = f.WriteString(withDate)
-			_, _ = f.WriteString("\n")
-			f.Sync()
-
-			wsMsg := fmt.Sprintf("{%v}%v", i, withDate)
-
-			select {
-			case dataChan <- wsMsg:
-				//fmt.Println("sent message")
-			default:
-				//fmt.Println("no message sent")
-			}
-
-			t, err := time.Parse("2006-01-02 15:04:05", strings.Replace(cleanText, "# ", "", -1))
-			if err == nil {
-				log.Println("---------------- syncing time ----------------")
-				TimeDiff = time.Now().Sub(t).Seconds()
-			}
 		}
 	}
 
