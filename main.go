@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	TimeDiff   = float64(0)
+	TimeDiff   = int64(0)
 	isPi       = false
 	dataChan   = make(chan []byte)
 	deleteChan = make(chan int)
@@ -115,7 +115,8 @@ func runForPort(i int, portName string, mode *serial.Mode) bool {
 				t, err := time.Parse("2006-01-02 15:04:05", strings.Replace(cleanText, "# ", "", -1))
 				if err == nil {
 					log.Println("---------------- syncing time ----------------")
-					TimeDiff = time.Now().Sub(t).Seconds()
+					TimeDiff = t.Unix() - time.Now().Unix()
+					log.Println("time difference is ", TimeDiff)
 				}
 			}
 		}
