@@ -56,7 +56,11 @@
     var selectedPort = undefined;
 
     function saveInBrowser(filename, content) {
-        content = content.replaceAll("\0", "");
+        try {
+            content = content.replace(/\x00/g, "");
+        } catch (e) {
+            console.error(e);
+        }
         let blob = new Blob([content]);
         console.log(blob)
 
