@@ -175,7 +175,7 @@
                     portSelect.add(new Option("", ""));
 
                     for (let i = 0; i < jsonData.ports; i++) {
-                        portSelect.add(new Option(`Port ${i}`, i.toString()));
+                        portSelect.add(new Option(`Port ${i + 1}`, i.toString()));
                     }
                 } else alert("Ports not found");
             }
