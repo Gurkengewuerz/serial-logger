@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"embed"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 	"strconv"
@@ -11,8 +14,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gobuffalo/packr/v2"
 	"nhooyr.io/websocket"
+)
+
+var (
+	//go:embed templates
+	templates embed.FS
 )
 
 // chatServer enables broadcasting to a set of subscribers.
@@ -23,20 +30,27 @@ type chatServer struct {
 	subscribersMu sync.Mutex
 	subscribers   map[*subscriber]struct{}
 
-	packrBox *packr.Box
+	numbPorts int
 
 	delChan *chan int
 }
 
 // newChatServer constructs a chatServer with the defaults.
-func newChatServer(c *chan []byte, delChan *chan int) *chatServer {
+func newChatServer(c *chan []byte, delChan *chan int, numbPorts int) *chatServer {
 	cs := &chatServer{
 		subscribers: make(map[*subscriber]struct{}),
-		packrBox:    packr.New("httpFolder", "./templates"),
 		delChan:     delChan,
+		numbPorts:   numbPorts,
 	}
-	cs.serveMux.Handle("/", http.FileServer(cs.packrBox))
+
+	serverRoot, err := fs.Sub(templates, "templates")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cs.serveMux.Handle("/", http.FileServer(http.FS(serverRoot)))
 	cs.serveMux.HandleFunc("/subscribe", cs.subscribeHandler)
+	cs.serveMux.HandleFunc("/ports", cs.getPorts)
 	cs.serveMux.HandleFunc("/data/", cs.getFile)
 	cs.serveMux.HandleFunc("/delete/", cs.deleteFile)
 
@@ -69,6 +83,16 @@ func (cs *chatServer) getFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.ServeFile(w, r, fmt.Sprintf("differentmind_%v.txt", id))
+}
+
+func (cs *chatServer) getPorts(w http.ResponseWriter, r *http.Request) {
+	jsonResponse := struct {
+		Ports int `json:"ports"`
+	}{
+		Ports: cs.numbPorts,
+	}
+	j, _ := json.Marshal(jsonResponse)
+	_, _ = w.Write(j)
 }
 
 func (cs *chatServer) deleteFile(w http.ResponseWriter, r *http.Request) {

@@ -6,7 +6,7 @@ import (
 	"github.com/akamensky/argparse"
 	"go.bug.st/serial"
 	"golang.org/x/net/html/charset"
-	"io/ioutil"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -21,6 +21,7 @@ import (
 var (
 	TimeDiff   = int64(0)
 	isPi       = false
+	isSyncTime = false
 	dataChan   = make(chan []byte)
 	deleteChan = make(chan int)
 )
@@ -82,6 +83,9 @@ func runForPort(i int, portName string, mode *serial.Mode) bool {
 
 			if strings.Contains(stringBuffer.String(), "\n") {
 				s, err := stringBuffer.ReadString('\n')
+				if err != nil {
+					continue
+				}
 				cleanText := strings.Replace(s, "\r", "", -1)
 				cleanText = strings.Replace(cleanText, "\n", "", -1)
 
@@ -95,7 +99,7 @@ func runForPort(i int, portName string, mode *serial.Mode) bool {
 
 				withDate := fmt.Sprintf("[%v] %v", getNow(), cleanText)
 				reader, _ := charset.NewReaderLabel("ascii", bytes.NewReader([]byte(withDate)))
-				strBytes, _ := ioutil.ReadAll(reader)
+				strBytes, _ := io.ReadAll(reader)
 
 				_, _ = f.Write(strBytes)
 				_, _ = f.WriteString("\n")
@@ -103,7 +107,7 @@ func runForPort(i int, portName string, mode *serial.Mode) bool {
 
 				wsMsg := fmt.Sprintf("{%v}%v", i, withDate)
 				wsReader, _ := charset.NewReaderLabel("ascii", bytes.NewReader([]byte(wsMsg)))
-				wsStrBytes, _ := ioutil.ReadAll(wsReader)
+				wsStrBytes, _ := io.ReadAll(wsReader)
 
 				select {
 				case dataChan <- wsStrBytes:
@@ -112,11 +116,13 @@ func runForPort(i int, portName string, mode *serial.Mode) bool {
 					//fmt.Println("no message sent")
 				}
 
-				t, err := time.Parse("2006-01-02 15:04:05", strings.Replace(cleanText, "# ", "", -1))
-				if err == nil {
-					log.Println("---------------- syncing time ----------------")
-					TimeDiff = t.Unix() - time.Now().Unix()
-					log.Println("time difference is ", TimeDiff)
+				if isSyncTime {
+					t, err := time.Parse("2006-01-02 15:04:05", strings.Replace(cleanText, "# ", "", -1))
+					if err == nil {
+						log.Println("---------------- syncing time ----------------")
+						TimeDiff = t.Unix() - time.Now().Unix()
+						log.Println("time difference is ", TimeDiff)
+					}
 				}
 			}
 		}
@@ -161,6 +167,7 @@ func main() {
 	parser := argparse.NewParser("seriallogger", "by Niklas Schütrumpf <niklas@mc8051.de>")
 	ports := parser.List("p", "port", &argparse.Options{Required: true, Help: "COM ports which should be scanned"})
 	pi := parser.Flag("g", "gpio", &argparse.Options{Required: false, Help: "If RPi GPIO are supported use this flag"})
+	syncTime := parser.Flag("s", "sync-time", &argparse.Options{Required: false, Help: "Sync time using the output of a serial port"})
 
 	err := parser.Parse(os.Args)
 	if err != nil {
@@ -169,6 +176,7 @@ func main() {
 	}
 
 	isPi = *pi
+	isSyncTime = *syncTime
 
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -184,7 +192,7 @@ func main() {
 	}
 	log.Printf("listening on http://%v", l.Addr())
 
-	cs := newChatServer(&dataChan, &deleteChan)
+	cs := newChatServer(&dataChan, &deleteChan, len(*ports))
 	s := &http.Server{
 		Handler:      cs,
 		ReadTimeout:  time.Second * 10,

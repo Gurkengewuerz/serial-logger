@@ -10,7 +10,7 @@ User=pi
 Group=nogroup
 
 WorkingDirectory=/home/pi/
-ExecStart=/home/pi/seriallogger --port /dev/ttyUSB0 --port /dev/ttyUSB1
+ExecStart=/home/pi/seriallogger --port /dev/ttyUSB0 --port /dev/ttyUSB1 --port /dev/ttyUSB2 --sync-time
 SyslogIdentifier=serial-logger
 
 [Install]
