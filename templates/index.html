@@ -20,12 +20,7 @@
     <hr/>
     <div class='row' style='margin-bottom: 35px'>
         <div class='col-2'>
-            <select onchange="onPortChange()" id="ports">
-                <option value=""></option>
-                <option value="0">Port 1</option>
-                <option value="1">Port 2</option>
-                <option value="2">Port 3</option>
-            </select>
+            <select onchange="onPortChange()" id="ports"></select>
         </div>
         <div class='col-8'>
             <a class='button purple' href='#' onclick="downloadFile()">Download</a>
@@ -51,7 +46,7 @@
     const messageLog = document.getElementById("logData");
     const portSelect = document.getElementById("ports");
 
-    const colors = ["darkturquoise", "orchid", "sandybrown"];
+    const colors = ["darkturquoise", "orchid", "sandybrown", "orange", "papayawhip", "wheat", "lightgrey", "coral"];
 
     var selectedPort = undefined;
 
@@ -166,7 +161,29 @@
         })
     }
 
+    function getPorts() {
+        const ajax = new XMLHttpRequest();
+        ajax.open("GET", `/ports`, true);
+        ajax.send();
+
+        ajax.onreadystatechange = function () {
+            if (ajax.readyState === 4 && ajax.status === 200) {
+                const data = ajax.responseText;
+                const jsonData = JSON.parse(data);
+                if (jsonData.hasOwnProperty("ports")) {
+                    while (portSelect.options.length > 0) portSelect.remove(0);
+                    portSelect.add(new Option("", ""));
+
+                    for (let i = 0; i < jsonData.ports; i++) {
+                        portSelect.add(new Option(`Port ${i}`, i.toString()));
+                    }
+                } else alert("Ports not found");
+            }
+        };
+    }
+
     document.addEventListener("DOMContentLoaded", function (event) {
+        getPorts();
         dial();
         for (let i = 0; i < portSelect.length; i++) {
             portSelect.options[i].style.color = colors[parseInt(portSelect.options[i].value)];
